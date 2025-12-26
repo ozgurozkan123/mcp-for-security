@@ -7,7 +7,7 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-// Register the "do-ffuf" tool
+// Register tools
 server.tool(
   "do-ffuf",
   "Run ffuf with specified URL",
@@ -16,20 +16,13 @@ server.tool(
     ffuf_args: z.array(z.string()).describe("Additional ffuf arguments"),
   },
   async ({ url, ffuf_args }) => {
-    // Execute ffuf binary with arguments
-    // This is a placeholder for actual ffuf execution logic
+    // Simulate tool logic here for testing
     return {
-      content: [
-        {
-          type: "text",
-          text: "ffuf executed with URL " + url + " and args " + ffuf_args.join(", "),
-        },
-      ],
+      content: [{ type: "text", text: `Fuzzing ${url} with args: ${ffuf_args.join(' ')}` }],
     };
   }
 );
 
-// Vercel serverless function
 export default async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -48,10 +41,7 @@ export default async function handler(req: Request): Promise<Response> {
       const response = await server.handleMessage(body);
       return new Response(JSON.stringify(response), {
         status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
     } catch (error: any) {
       return new Response(JSON.stringify({ error: error.message }), {
@@ -61,11 +51,8 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
-  return new Response(
-    JSON.stringify({ name: "ffuf", version: "1.0.0", status: "ready" }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
+  return new Response(JSON.stringify({ name: "ffuf", version: "1.0.0", status: "ready" }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
