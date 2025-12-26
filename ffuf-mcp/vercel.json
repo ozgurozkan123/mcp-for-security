@@ -1,7 +1,15 @@
 {
-  "functions": {
-    "api/mcp/route.ts": {
-      "maxDuration": 60
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/mcp.ts",
+      "use": "@vercel/node"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/mcp",
+      "dest": "/api/mcp.ts"
+    }
+  ]
 }
