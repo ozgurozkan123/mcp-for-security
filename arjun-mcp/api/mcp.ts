@@ -30,7 +30,7 @@ const TOOLS = [
 async function callTool(name: string, args: any): Promise<any> {
   switch (name) {
     case "do-arjun":
-      // Simulate running tool
+      console.log(`Calling do-arjun with args: ${JSON.stringify(args)}`);
       if (!args.url) {
         throw new Error("URL parameter is missing");
       }
@@ -45,6 +45,7 @@ async function handleJsonRpc(request: any): Promise<any> {
   const { id, method, params } = request;
 
   try {
+    console.log(`Handling RPC method: ${method}, Params: ${JSON.stringify(params)}`);
     switch (method) {
       case "initialize":
         return {
@@ -80,6 +81,7 @@ async function handleJsonRpc(request: any): Promise<any> {
         };
     }
   } catch (error: any) {
+    console.error("Error handling JSON-RPC request:", error);
     return {
       jsonrpc: "2.0",
       id,
@@ -95,6 +97,8 @@ export default async function handler(req: Request): Promise<Response> {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Accept, MCP-Protocol-Version, Mcp-Session-Id",
   };
+
+  console.log(`Received ${req.method} request to ${req.url}`);
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -130,6 +134,7 @@ export default async function handler(req: Request): Promise<Response> {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     } catch (error: any) {
+      console.error("Error processing request:", error);
       return new Response(JSON.stringify({
         jsonrpc: "2.0",
         id: null,
@@ -141,6 +146,7 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
+  console.error("Method not allowed");
   return new Response(JSON.stringify({ error: "Method not allowed" }), {
     status: 405,
     headers: { "Content-Type": "application/json", ...corsHeaders },
