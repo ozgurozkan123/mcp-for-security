@@ -20,9 +20,13 @@ server.tool(
         chunkSize: z.number().optional().describe("Chunk size")
     },
     async ({ url, textFile, wordlist, method, rateLimit, chunkSize }) => {
-        // Simulated process logic
-        // Output pretend command result
-        return { content: [{ type: "text", text: `Simulated result for ${url}` }] };
+        try {
+            // Simulated process logic
+            return { content: [{ type: "text", text: `Simulated result for ${url}` }] };
+        } catch (error) {
+            console.error("Error executing tool:", error);
+            throw new Error(`Execution failed: ${error.message}`);
+        }
     },
 );
 
@@ -59,6 +63,8 @@ export default async function handler(req: Request): Promise<Response> {
         if (req.method === "POST") {
             const body = await req.json();
             const response = await server.handleMessage(body);
+            if (!response) throw new Error("Invalid response from server");
+
             return new Response(JSON.stringify(response), {
                 status: 200,
                 headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -66,6 +72,7 @@ export default async function handler(req: Request): Promise<Response> {
         }
 
     } catch (error: any) {
+        console.error("Request handling error:", error);
         return new Response(
             JSON.stringify({
                 jsonrpc: "2.0",
