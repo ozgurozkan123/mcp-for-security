@@ -26,129 +26,56 @@ const TOOLS = [
   }
 ];
 
-// Tool implementation
-async function callTool(name: string, args: any): Promise<any> {
-  switch (name) {
-    case "do-arjun":
-      console.log(`Calling do-arjun with args: ${JSON.stringify(args)}`);
-      if (!args.url) {
-        throw new Error("URL parameter is missing");
-      }
-      return { content: [{ type: "text", text: `Simulated output for ${args.url}` }] };
-    default:
-      throw new Error("Unknown tool: " + name);
-  }
-}
-
-// Handle JSON-RPC requests
-async function handleJsonRpc(request: any): Promise<any> {
-  const { id, method, params } = request;
-
-  try {
-    console.log(`Handling RPC method: ${method}, Params: ${JSON.stringify(params)}`);
-    switch (method) {
-      case "initialize":
-        return {
-          jsonrpc: "2.0",
-          id,
-          result: {
-            protocolVersion: params?.protocolVersion || "2025-03-26",
-            capabilities: {},
-            serverInfo: SERVER_INFO,
-          },
-        };
-
-      case "tools/list":
-        return {
-          jsonrpc: "2.0",
-          id,
-          result: { tools: TOOLS },
-        };
-
-      case "tools/call":
-        const toolResult = await callTool(params.name, params.arguments || {});
-        return {
-          jsonrpc: "2.0",
-          id,
-          result: toolResult,
-        };
-
-      default:
-        return {
-          jsonrpc: "2.0",
-          id,
-          error: { code: -32601, message: "Method not found: " + method },
-        };
-    }
-  } catch (error: any) {
-    console.error("Error handling JSON-RPC request:", error);
-    return {
-      jsonrpc: "2.0",
-      id,
-      error: { code: -32000, message: error.message },
-    };
-  }
-}
-
-// Vercel serverless handler
-export default async function handler(req: Request): Promise<Response> {
+async function handleRequest(req: Request) {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Accept, MCP-Protocol-Version, Mcp-Session-Id",
   };
 
-  console.log(`Received ${req.method} request to ${req.url}`);
-
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  // Handle GET for health check
+  console.log(`Request method: ${req.method}`);
+
   if (req.method === "GET") {
-    return new Response(JSON.stringify({
-      name: SERVER_INFO.name,
-      version: SERVER_INFO.version,
-      status: "ready",
-      protocol: "MCP",
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    try {
+      return new Response(JSON.stringify({
+        serverInfo: SERVER_INFO,
+        status: "running",
+      }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    } catch (error: any) {
+      console.error("Error in health check:", error);
+      return new Response(JSON.stringify({ error: "Server error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
   }
 
-  // Handle POST for MCP JSON-RPC
   if (req.method === "POST") {
     try {
-      const body = await req.json();
-      const response = await handleJsonRpc(body);
+      const json = await req.json();
+      console.log("Received JSON payload:", json);
 
-      // Notifications don't get a response
-      if (response === null) {
-        return new Response(null, { status: 202, headers: corsHeaders });
-      }
-
-      return new Response(JSON.stringify(response), {
+      return new Response(JSON.stringify({ response: "Handled" }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     } catch (error: any) {
-      console.error("Error processing request:", error);
-      return new Response(JSON.stringify({
-        jsonrpc: "2.0",
-        id: null,
-        error: { code: -32700, message: "Parse error: " + error.message },
-      }), {
+      console.error("Error parsing JSON:", error);
+      return new Response(JSON.stringify({ error: "Bad Request" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
   }
 
-  console.error("Method not allowed");
   return new Response(JSON.stringify({ error: "Method not allowed" }), {
     status: 405,
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 }
+
+export default handleRequest;
