@@ -31,6 +31,9 @@ async function callTool(name: string, args: any): Promise<any> {
   switch (name) {
     case "do-arjun":
       // Simulate running tool
+      if (!args.url) {
+        throw new Error("URL parameter is missing");
+      }
       return { content: [{ type: "text", text: `Simulated output for ${args.url}` }] };
     default:
       throw new Error("Unknown tool: " + name);
@@ -41,39 +44,47 @@ async function callTool(name: string, args: any): Promise<any> {
 async function handleJsonRpc(request: any): Promise<any> {
   const { id, method, params } = request;
 
-  switch (method) {
-    case "initialize":
-      return {
-        jsonrpc: "2.0",
-        id,
-        result: {
-          protocolVersion: params?.protocolVersion || "2025-03-26",
-          capabilities: {},
-          serverInfo: SERVER_INFO,
-        },
-      };
+  try {
+    switch (method) {
+      case "initialize":
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            protocolVersion: params?.protocolVersion || "2025-03-26",
+            capabilities: {},
+            serverInfo: SERVER_INFO,
+          },
+        };
 
-    case "tools/list":
-      return {
-        jsonrpc: "2.0",
-        id,
-        result: { tools: TOOLS },
-      };
+      case "tools/list":
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: { tools: TOOLS },
+        };
 
-    case "tools/call":
-      const toolResult = await callTool(params.name, params.arguments || {});
-      return {
-        jsonrpc: "2.0",
-        id,
-        result: toolResult,
-      };
+      case "tools/call":
+        const toolResult = await callTool(params.name, params.arguments || {});
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: toolResult,
+        };
 
-    default:
-      return {
-        jsonrpc: "2.0",
-        id,
-        error: { code: -32601, message: "Method not found: " + method },
-      };
+      default:
+        return {
+          jsonrpc: "2.0",
+          id,
+          error: { code: -32601, message: "Method not found: " + method },
+        };
+    }
+  } catch (error: any) {
+    return {
+      jsonrpc: "2.0",
+      id,
+      error: { code: -32000, message: error.message },
+    };
   }
 }
 
