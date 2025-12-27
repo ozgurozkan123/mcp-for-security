@@ -22,6 +22,7 @@ server.tool(
     async ({ url, textFile, wordlist, method, rateLimit, chunkSize }) => {
         try {
             // Simulated process logic
+            console.log("Executing tool with parameters:", { url, textFile, wordlist, method, rateLimit, chunkSize });
             return { content: [{ type: "text", text: `Simulated result for ${url}` }] };
         } catch (error) {
             console.error("Error executing tool:", error);
@@ -38,6 +39,7 @@ export default async function handler(req: Request): Promise<Response> {
     };
 
     try {
+        console.log("Request method:", req.method);
         // Handle CORS preflight
         if (req.method === "OPTIONS") {
             return new Response(null, {
@@ -62,6 +64,7 @@ export default async function handler(req: Request): Promise<Response> {
         // Handle POST for MCP JSON-RPC
         if (req.method === "POST") {
             const body = await req.json();
+            console.log("Request body:", body);
             const response = await server.handleMessage(body);
             if (!response) throw new Error("Invalid response from server");
 
